@@ -1,0 +1,18 @@
+services:
+  app:
+    image: python:3.12-slim
+    container_name: p2pquake-discord
+    working_dir: /app
+    restart: unless-stopped
+    environment:
+      PRODUCTION: "false"
+      MIN_SCALE: "40"
+      DISCORD_WEBHOOK_URL: ""
+      DISCORD_USERNAME: "P2PQuake Notify"
+      DISCORD_AVATAR_URL: ""
+    volumes:
+      - ./main.py:/app/main.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+    command: >
+      sh -c "pip install --no-cache-dir --root-user-action=ignore -r /app/requirements.txt && 
+        python -u /app/main.py"
