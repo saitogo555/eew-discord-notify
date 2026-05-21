@@ -113,7 +113,7 @@ def build_embed(data: dict) -> dict:
 
 	depth_text = f"{depth} km" if depth.isdigit() else depth
 
-	title = "🚨 地震情報 🚨" if PRODUCTION else "🚨 地震情報 [Sandbox Mode]🚨 "
+	title = "🚨 地震情報 🚨" if PRODUCTION else "🚨 地震情報 [Sandbox Mode] 🚨 "
 
 	return {
 		"title": title,
