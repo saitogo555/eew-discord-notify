@@ -1,4 +1,4 @@
-# p2pquake-discord-notify
+# eew-discord-notify
 
 P2P地震情報のWebSocket APIを受信し、Discord Webhookに地震情報を通知するシステムです。
 
