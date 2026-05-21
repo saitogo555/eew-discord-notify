@@ -8,8 +8,6 @@ services:
       PRODUCTION: "false"
       MIN_SCALE: "40"
       DISCORD_WEBHOOK_URL: ""
-      DISCORD_USERNAME: "P2PQuake Notify"
-      DISCORD_AVATAR_URL: ""
     volumes:
       - ./main.py:/app/main.py:ro
       - ./requirements.txt:/app/requirements.txt:ro

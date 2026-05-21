@@ -14,15 +14,12 @@ PRODUCTION = os.getenv("PRODUCTION", "false").lower() == "true"
 P2PQUAKE_WS_URL = os.getenv("P2PQUAKE_WS_URL", PRODUCTION_WS_URL if PRODUCTION else SANDBOX_WS_URL)
 MIN_SCALE = int(os.getenv("MIN_SCALE", "40" if PRODUCTION else "-1"))
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
-DISCORD_USERNAME = os.getenv("DISCORD_USERNAME", "P2PQuake Notify")
-DISCORD_AVATAR_URL = os.getenv("DISCORD_AVATAR_URL", "")
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 if not DISCORD_WEBHOOK_URL:
 	raise RuntimeError("DISCORD_WEBHOOK_URL を環境変数に設定してください。")
 
 logging.basicConfig(
-	level=getattr(logging, LOG_LEVEL, logging.INFO),
+	level=logging.INFO,
 	format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logger = logging.getLogger("p2pquake-discord")
@@ -116,8 +113,10 @@ def build_embed(data: dict) -> dict:
 
 	depth_text = f"{depth} km" if depth.isdigit() else depth
 
+	title = "🚨 地震情報 🚨" if PRODUCTION else "🚨 地震情報 [Sandbox Mode]🚨 "
+
 	return {
-		"title": "🚨 地震情報 🚨",
+		"title": title,
 		"color": color,
 		"fields": [
 			{"name": "発生時刻", "value": origin_time, "inline": False},
@@ -134,13 +133,9 @@ def build_embed(data: dict) -> dict:
 
 async def send_discord(session: aiohttp.ClientSession, embed: dict):
 	payload = {
-		"username": DISCORD_USERNAME,
 		"embeds": [embed],
 		"allowed_mentions": {"parse": []},
 	}
-
-	if DISCORD_AVATAR_URL:
-		payload["avatar_url"] = DISCORD_AVATAR_URL
 
 	logger.debug("sending webhook: title=%s", embed.get("title"))
 
@@ -201,11 +196,10 @@ async def handle_message(session: aiohttp.ClientSession, raw_message: str):
 async def main():
 	logger.info("program started")
 	logger.info(
-		"config: production=%s ws_url=%s min_scale=%s username=%s",
+		"config: production=%s ws_url=%s min_scale=%s",
 		PRODUCTION,
 		P2PQUAKE_WS_URL,
 		MIN_SCALE,
-		DISCORD_USERNAME,
 	)
 
 	timeout = aiohttp.ClientTimeout(total=15)
