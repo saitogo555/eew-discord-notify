@@ -94,6 +94,8 @@ def build_event_key(data: dict) -> tuple:
 def to_str(v, fallback="不明"):
 	if v is None or v == "":
 		return fallback
+	if v == -1 or v == -1.0 or str(v) in ("-1", "-1.0"):
+		return fallback
 	return str(v)
 
 
