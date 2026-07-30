@@ -54,15 +54,21 @@ P2P地震情報のWebSocket APIを受信し、Discord Webhookに地震情報を�
 git clone https://github.com/saitogo555/eew-discord-notify
 ```
 
-### 2. compose.ymlを編集
+### 2. 環境変数 (.env) の設定
 
-最低でも `DISCORD_WEBHOOK_URL` を設定してください。
+`.env.example` をコピーして `.env` を作成し、環境変数を設定してください。
+最低限 `DISCORD_WEBHOOK_URL` の設定が必要です。
 
-```yaml
-environment:
-  PRODUCTION: "true"
-  MIN_SCALE: "40"
-  DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/xxxxx/yyyyy"
+```sh
+cp .env.example .env
+```
+
+`.env` の記述例:
+
+```env
+PRODUCTION="true"
+MIN_SCALE="40"
+DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/xxxxx/yyyyy"
 ```
 
 ### 3. 起動

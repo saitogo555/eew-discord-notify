@@ -4,10 +4,8 @@ services:
     container_name: p2pquake-discord
     working_dir: /app
     restart: unless-stopped
-    environment:
-      PRODUCTION: "false"
-      MIN_SCALE: "40"
-      DISCORD_WEBHOOK_URL: ""
+    env_file:
+      - .env
     volumes:
       - ./main.py:/app/main.py:ro
       - ./requirements.txt:/app/requirements.txt:ro
