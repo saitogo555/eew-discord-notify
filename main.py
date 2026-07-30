@@ -52,7 +52,17 @@ SCALE_COLORS = {
 	70: 0x4A235A,
 }
 
+TSUNAMI_LABELS = {
+	"None": "なし",
+	"Unknown": "不明",
+	"Checking": "調査中",
+	"NonEffective": "若干の海面変動が予想されるが、被害の心配なし",
+	"Watch": "津波注意報",
+	"Warning": "津波予報（種類不明）",
+}
+
 seen_events = set()
+event_report_counts = {}
 
 
 def parse_time(text: str) -> str:
@@ -99,9 +109,10 @@ def to_str(v, fallback="不明"):
 	return str(v)
 
 
-def build_embed(data: dict) -> dict:
+def build_embed(data: dict, report_num: int = 1) -> dict:
 	eq = data.get("earthquake", {}) or {}
 	hyp = eq.get("hypocenter", {}) or {}
+	comments = data.get("comments", {}) or {}
 
 	max_scale = int(eq.get("maxScale", -1))
 	scale_label = SCALE_LABELS.get(max_scale, f"不明 ({max_scale})")
@@ -111,26 +122,38 @@ def build_embed(data: dict) -> dict:
 	location = to_str(hyp.get("name"))
 	magnitude = to_str(hyp.get("magnitude"))
 	depth = to_str(hyp.get("depth"))
-	domestic_tsunami = to_str(data.get("domesticTsunami"))
+	raw_tsunami = eq.get("domesticTsunami") or data.get("domesticTsunami")
+	domestic_tsunami = TSUNAMI_LABELS.get(raw_tsunami, to_str(raw_tsunami))
 
 	depth_text = f"{depth} km" if depth.isdigit() else depth
+	report_text = f"第{report_num}報"
+
+	title_scale = "震度不明" if scale_label == "不明" else scale_label
+	title_location = "震源地不明" if location == "不明" else location
 
 	if PRODUCTION:
-		title = f"🚨 地震情報 【{scale_label}】 {location} 🚨"
+		title = f"🚨 地震情報 【{title_scale}】 {title_location} 🚨"
 	else:
-		title = f"🚨 地震情報 [Sandbox Mode] 【{scale_label}】 {location} 🚨"
+		title = f"🚨 地震情報 [Sandbox Mode] 【{title_scale}】 {title_location} 🚨"
+
+	fields = [
+		{"name": "報数", "value": report_text, "inline": True},
+		{"name": "発生時刻", "value": origin_time, "inline": True},
+		{"name": "震度", "value": scale_label, "inline": True},
+		{"name": "マグニチュード", "value": magnitude, "inline": True},
+		{"name": "震源地", "value": location, "inline": True},
+		{"name": "深さ", "value": depth_text, "inline": True},
+		{"name": "津波", "value": domestic_tsunami, "inline": True},
+	]
+
+	free_form_comment = (comments.get("freeFormComment") or "").strip()
+	if free_form_comment:
+		fields.append({"name": "補足情報", "value": free_form_comment, "inline": False})
 
 	return {
 		"title": title,
 		"color": color,
-		"fields": [
-			{"name": "発生時刻", "value": origin_time, "inline": False},
-			{"name": "震度", "value": scale_label, "inline": False},
-			{"name": "マグニチュード", "value": magnitude, "inline": False},
-			{"name": "震源地", "value": location, "inline": False},
-			{"name": "深さ", "value": depth_text, "inline": False},
-			{"name": "津波", "value": domestic_tsunami, "inline": False},
-		],
+		"fields": fields,
 		"footer": {"text": "P2P地震情報"},
 		"timestamp": datetime.now(timezone.utc).isoformat(),
 	}
@@ -187,7 +210,12 @@ async def handle_message(session: aiohttp.ClientSession, raw_message: str):
 		logger.info("skip duplicated event: %s", event_key)
 		return
 
-	embed = build_embed(data)
+	issue = data.get("issue", {}) or {}
+	event_id = issue.get("eventId") or eq.get("time") or "unknown"
+	report_num = event_report_counts.get(event_id, 0) + 1
+	event_report_counts[event_id] = report_num
+
+	embed = build_embed(data, report_num=report_num)
 	await send_discord(session, embed)
 
 	seen_events.add(event_key)
@@ -195,7 +223,8 @@ async def handle_message(session: aiohttp.ClientSession, raw_message: str):
 
 	if len(seen_events) > 1000:
 		seen_events.clear()
-		logger.info("seen_events cleared")
+		event_report_counts.clear()
+		logger.info("seen_events and event_report_counts cleared")
 
 
 async def main():
